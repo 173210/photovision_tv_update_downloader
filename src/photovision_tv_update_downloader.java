@@ -1,3 +1,21 @@
+/* 
+ * Copyright (C) 2013 173210 <root.3.173210@live.com>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 3 of
+ * the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
 import java.awt.Button;
 import java.awt.Desktop;
 import java.awt.Label;
@@ -26,6 +44,7 @@ import javax.crypto.spec.DESedeKeySpec;
 import javax.crypto.spec.IvParameterSpec;
 import javax.swing.JApplet;
 import javax.swing.JComboBox;
+import javax.swing.JLabel;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
@@ -96,6 +115,8 @@ public class photovision_tv_update_downloader extends JApplet implements TextLis
 				FormFactory.DEFAULT_ROWSPEC,
 				RowSpec.decode("fill:max(1dlu;pref):grow"),
 				FormFactory.RELATED_GAP_ROWSPEC,
+				FormFactory.DEFAULT_ROWSPEC,
+				FormFactory.RELATED_GAP_ROWSPEC,
 				FormFactory.DEFAULT_ROWSPEC,}));
 		
 		Label lblImei = new Label("IMEI");
@@ -158,9 +179,8 @@ public class photovision_tv_update_downloader extends JApplet implements TextLis
 		Button btnRandIv = new Button("ランダム");
 		btnRandIv.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-	            SecureRandom securerand = new SecureRandom();
 	            byte iv[] = new byte[8];
-	            securerand.nextBytes(iv);
+	            new SecureRandom().nextBytes(iv);
 	            txtFdIv.setText(bufferToHex(iv, 0, 8));
 			}
 		});
@@ -190,7 +210,16 @@ public class photovision_tv_update_downloader extends JApplet implements TextLis
 			public void actionPerformed(ActionEvent arg0) {
 				try {
 					getUpgradeInfo(txtFdImei.getText(), txtFdImsi.getText(), (String)comboBoxFw.getSelectedItem(), txtFdIv.getText());
-					ReleaseInfo_disp.setText((new StringBuilder()).append("バージョン:").append(releaseinfo.Ver).append(" バージョンID:").append(releaseinfo.VerId).append(" 状態:").append(releaseinfo.Desc).append(" 作成日時:").append(releaseinfo.Createtime).toString());
+					ReleaseInfo_disp.setText((new StringBuilder())
+							.append("バージョン:")
+							.append(releaseinfo.Ver)
+							.append(" バージョンID:")
+							.append(releaseinfo.VerId)
+							.append(" 状態:")
+							.append(releaseinfo.Desc)
+							.append(" 作成日時:")
+							.append(releaseinfo.Createtime)
+							.toString());
 					list.removeAll();
 			        for (int i = 0; i < listUpgradeInfo.size(); i++) {
 			        	UpgradeInfo upgradeinfo = listUpgradeInfo.get(i);
@@ -222,6 +251,9 @@ public class photovision_tv_update_downloader extends JApplet implements TextLis
 		});
 		btndownload.setEnabled(false);
 		getContentPane().add(btndownload, "6, 18");
+		
+		JLabel lblCopyright = new JLabel("このソフトウェアはGPLv3でライセンスされています。 Copyright © 2013 173210 All rights Reserved.");
+		getContentPane().add(lblCopyright, "2, 20, 5, 1");
 
 	}
 	
@@ -313,11 +345,7 @@ public class photovision_tv_update_downloader extends JApplet implements TextLis
         Element element = doc.createElement("root");
         doc.appendChild(element);
         element.appendChild(createElement(doc, "DeviceName", "MMC392"));
-        if(imei == null)
-            imei = "000000000000000";
         element.appendChild(createElement(doc, "IMEI", desEncrypt(imei, Key_byte)));
-        if(imsi == null)
-            imsi = "000000000000000";
         element.appendChild(createElement(doc, "IMSI", desEncrypt(imsi, Key_byte)));
         element.appendChild(createElement(doc, "FirmWare", firmware));
         return docToString(doc);
@@ -355,13 +383,13 @@ public class photovision_tv_update_downloader extends JApplet implements TextLis
         return element;
     }
 
-    public static String bufferToHex(byte buf[], int start, int len) {
-        char ac[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+    public static String bufferToHex(byte bin[], int start, int len) {
+        char hex[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
         StringBuilder strbuilder = new StringBuilder();
         for(int i = start; i < start + len; i++) {
-            byte byte0 = buf[i];
-            strbuilder.append(ac[0xf & byte0 >>> 4]);
-            strbuilder.append(ac[byte0 & 0xf]);
+            byte byte0 = bin[i];
+            strbuilder.append(hex[0xf & byte0 >>> 4]);
+            strbuilder.append(hex[byte0 & 0xf]);
         }
 
         return strbuilder.toString();
@@ -384,10 +412,10 @@ public class photovision_tv_update_downloader extends JApplet implements TextLis
 
     public String desEncrypt(String src, byte keybuf[]) throws Exception {
         if(src == null) return null;
-        byte abyte0[] = iv_param_spec.getIV();
-        String s1 = (new StringBuilder()).append("HEX:").append(bufferToHex(abyte0, 0, abyte0.length)).toString();
-        byte abyte1[] = encrypt(src.getBytes());
-        return (new StringBuilder()).append(s1).append(bufferToHex(abyte1, 0, abyte1.length)).toString();
+        byte iv_byte[] = iv_param_spec.getIV();
+        String s1 = (new StringBuilder()).append("HEX:").append(bufferToHex(iv_byte, 0, iv_byte.length)).toString();
+        byte enc[] = encrypt(src.getBytes());
+        return (new StringBuilder()).append(s1).append(bufferToHex(enc, 0, enc.length)).toString();
     }
 
     private String docToString(Document doc) throws Exception {
